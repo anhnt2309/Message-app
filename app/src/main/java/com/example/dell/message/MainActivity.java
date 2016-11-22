@@ -34,6 +34,11 @@ public class MainActivity extends AppCompatActivity {
         listView.setAdapter(messageAdapterAdapter);
 
 
+        
+
+
+
+
     }
 
     @Override
