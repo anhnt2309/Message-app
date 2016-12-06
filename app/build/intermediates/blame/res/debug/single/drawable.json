@@ -16,6 +16,10 @@
         "source": "D:\\AndroidStudioProject\\Message\\app\\build\\intermediates\\exploded-aar\\com.android.support\\appcompat-v7\\25.0.0\\res\\drawable\\abc_cab_background_internal_bg.xml"
     },
     {
+        "merged": "D:\\AndroidStudioProject\\Message\\app\\build\\intermediates\\res\\merged\\debug\\drawable\\ic_launcher.png",
+        "source": "D:\\AndroidStudioProject\\Message\\app\\src\\main\\res\\drawable\\ic_launcher.png"
+    },
+    {
         "merged": "D:\\AndroidStudioProject\\Message\\app\\build\\intermediates\\res\\merged\\debug\\drawable\\abc_list_selector_holo_dark.xml",
         "source": "D:\\AndroidStudioProject\\Message\\app\\build\\intermediates\\exploded-aar\\com.android.support\\appcompat-v7\\25.0.0\\res\\drawable\\abc_list_selector_holo_dark.xml"
     },

@@ -2,6 +2,7 @@ package com.example.dell.message;
 
 import android.app.Activity;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,7 +59,7 @@ public class MessageAdapter extends ArrayAdapter<TextDetail> {
             return listItemView;
 
         String messName = (currentMess.getMessageName() == null) ? "$$" : "" + currentMess.getMessageName();
-        String messText = (currentMess.getMessageText() == null) ? "No Author" : currentMess.getMessageText();
+        String messText = TextUtils.isEmpty(currentMess.getMessageText()) ? "No Mess" : currentMess.getMessageText();
 
 
         //UI

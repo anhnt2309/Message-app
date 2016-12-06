@@ -10,7 +10,8 @@ import java.security.Timestamp;
  */
 
 @IgnoreExtraProperties
-public class TextDetail implements Serializable {
+public class TextDetail implements Serializable  {
+    public String uuid;
     public String Name;
     public String Text;
     public Long timestamp ;

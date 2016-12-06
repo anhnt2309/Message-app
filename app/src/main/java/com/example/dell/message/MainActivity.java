@@ -1,5 +1,9 @@
 package com.example.dell.message;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,101 +23,107 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    final FirebaseDatabase database = FirebaseDatabase.getInstance();
-    DatabaseReference ref = database.getReference("push_text");
+    private static final String TAG = "Mainactivity";
+    private static final String SYNCHRONIZE_DATA_ARRAY_LOCK = ",hmdtymfh hb h";
+    private FirebaseDatabase database;
+    private DatabaseReference postsRef;
 
-    final protected void displayMessageList(final List<TextDetail> textDetails) {
-        MessageAdapter messageAdapterAdapter = new MessageAdapter(MainActivity.this, textDetails);
-        ListView listView = (ListView) findViewById(R.id.display_message);
-        listView.setAdapter(messageAdapterAdapter);
+    private MessageAdapter messageAdapterAdapter;
+    private ArrayList<TextDetail> dataArray;
+    Intent serviceIntent;
+
+    @Override
+    protected void onDestroy() {
+        stopService(serviceIntent);
+    }
 
 
-        
 
+    @Override
+    public void onBackPressed() {
+        stopService(new Intent(this, StartedService.class));
+    }
 
+    private ListView mListView;
+    private EditText enterText;
+    private EditText enterName;
 
+    protected void addNewMessage(final TextDetail model) {
+        synchronized (SYNCHRONIZE_DATA_ARRAY_LOCK) {
+            this.dataArray.add(model);
+        }
+        this.messageAdapterAdapter.notifyDataSetChanged();
+    }
 
+    protected void removeMessage(final String uuid) {
+        synchronized (SYNCHRONIZE_DATA_ARRAY_LOCK) {
+            for (TextDetail model : this.dataArray)
+                if (model.uuid != null && model.uuid.equalsIgnoreCase(uuid)) {
+                    this.dataArray.remove(model);
+                    break;
+                }
+        }
+        messageAdapterAdapter.notifyDataSetChanged();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //Crash report
-//        FirebaseCrash.report(new Exception("My first Android non-fatal error"));
-        final EditText enterText = (EditText) findViewById(R.id.enter_message);
-        final EditText enterName = (EditText) findViewById(R.id.enter_name);
-        Button send = (Button) findViewById(R.id.send_bt);
-        DatabaseReference postsRef = ref.child("posts");
-// push chat's text to server
-//        final Map<String, TextDetail> text = new HashMap<String, TextDetail>();
-//
-//        text.put("push", txt);
-        final DatabaseReference newPostRef = postsRef.push();
-        send.setOnClickListener(new View.OnClickListener() {
+        this.mListView = (ListView) findViewById(R.id.display_message);
+        this.enterText = (EditText) findViewById(R.id.enter_message);
+        this.enterName = (EditText) findViewById(R.id.enter_name);
+
+        this.database = FirebaseDatabase.getInstance();
+        this.postsRef = database.getReference("push_text").child("posts");
+
+        this.dataArray = new ArrayList<>();
+
+        this.messageAdapterAdapter = new MessageAdapter(MainActivity.this, dataArray);
+        this.mListView.setAdapter(messageAdapterAdapter);
+
+        Button btnSend = (Button) findViewById(R.id.send_bt);
+        btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final TextDetail txt = new TextDetail(enterName.getText().toString(), enterText.getText().toString());
-                newPostRef.setValue(txt);
+                //Form Validation
+                String name = enterName.getText().toString().trim();
+                String text = enterText.getText().toString().trim();
+                if (name.length() <= 0)
+                    return;
+                if (text.length() <= 0)
+                    return;
                 enterText.setText("");
+
+                DatabaseReference newPostRef = postsRef.push();
+
+                TextDetail txt = new TextDetail(name, text);
+                newPostRef.setValue(txt);
             }
         });
-//        Map<String, TextDetail> text = new HashMap<>();
-        final List<TextDetail> listValue = new ArrayList<TextDetail>(); // Result will be holded Here
-        postsRef.addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                TextDetail value = dataSnapshot.getValue(TextDetail.class);
-//                Toast.makeText(MainActivity.this, "current second :" + System.currentTimeMillis() / 1000, Toast.LENGTH_SHORT).show();
-//                Toast.makeText(MainActivity.this, "message second :" + value.timestamp, Toast.LENGTH_SHORT).show();
-//
-//                 if (((System.currentTimeMillis() / 1000) - value.getTimestamp()) > 600) {
-//                    return;
-//            }
-                // method 1
-//                Map<String, TextDetail> td = (HashMap<String,TextDetail>) dataSnapshot.getValue();
-//
-//                List<TextDetail> listValue =(List<TextDetail>) td.values();
 
+        EventBus.getDefault().register(this);
+        serviceIntent = new Intent(this, StartedService.class);
+        startService(serviceIntent);
+    }
 
-                listValue.add(value); //add result into array list
+    @Subscribe
+    public void onEvent(TextDetail model) {
+        addNewMessage(model);
+    }
 
-//                List<TextDetail> listValue = dataSnapshot.getValue(<TextDetail>.class);
-
-
-                displayMessageList(listValue);
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-//              TextDetail value = dataSnapshot.getValue(TextDetail.class);
-//                displayText.setText(value.Name + "\n" + value.Text);
-                TextDetail value = dataSnapshot.getValue(TextDetail.class);
-                listValue.add(value); //add result into array list
-                displayMessageList(listValue);
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.w("mainactivity", "Failed to read value!", databaseError.toException());
-                Toast.makeText(MainActivity.this, "Fail to read value!", Toast.LENGTH_SHORT).show();
-            }
-        });
+    @Subscribe
+    public void onEvent(String uuid) {
+        removeMessage(uuid);
     }
 }
+
